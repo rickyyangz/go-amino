@@ -1,6 +1,7 @@
 package amino
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -26,4 +27,18 @@ func TestUvarintSize(t *testing.T) {
 			require.Equal(t, tc.want, UvarintSize(tc.u), "#%d", i) // nolint:scopelint
 		})
 	}
+}
+
+func TestEncodeVarint(t *testing.T) {
+	var buf bytes.Buffer
+	err := EncodeVarint(&buf, 120)
+	require.NoError(t, err)
+	t.Log(buf.Bytes())
+	require.Equal(t, []byte{0xf0, 0x01} , buf.Bytes() )
+
+	buf.Reset()
+	err = EncodeUvarint(&buf, 120)
+	require.NoError(t, err)
+	t.Log(buf.Bytes())
+	require.Equal(t, []byte{0x78} , buf.Bytes() )
 }

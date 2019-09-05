@@ -202,13 +202,21 @@ func (cdc *Codec) MarshalBinaryBare(o interface{}) ([]byte, error) {
 	}
 
 	// Encode Amino:binary bytes.
-	var bz []byte
-	buf := new(bytes.Buffer)
-	rt := rv.Type()
-	info, err := cdc.getTypeInfoWlock(rt)
+	info, err := cdc.getTypeInfoWlock(rv.Type())
 	if err != nil {
 		return nil, err
 	}
+	var buf Buffer
+	buf.Grow(10000)
+	if info.Registered {
+		// TODO: https://github.com/tendermint/go-amino/issues/267
+		//return MarshalBinaryBare(RegisteredAny{
+		//	AminoPreOrDisfix: info.Prefix.Bytes(),
+		//	Value: bz,
+		//})
+		buf.WriteBytes(info.Prefix.Bytes())
+	}
+
 	// in the case of of a repeated struct (e.g. type Alias []SomeStruct),
 	// we do not need to prepend with `(field_number << 3) | wire_type` as this
 	// would need to be done for each struct and not only for the first.
@@ -219,26 +227,14 @@ func (cdc *Codec) MarshalBinaryBare(o interface{}) ([]byte, error) {
 		if err := cdc.writeFieldIfNotEmpty(buf, 1, info, FieldOptions{}, FieldOptions{}, rv, writeEmpty, bare); err != nil {
 			return nil, err
 		}
-		bz = buf.Bytes()
 	} else {
 		err = cdc.encodeReflectBinary(buf, info, rv, FieldOptions{BinFieldNum: 1}, true)
 		if err != nil {
 			return nil, err
 		}
-		bz = buf.Bytes()
-	}
-	// If registered concrete, prepend prefix bytes.
-	if info.Registered {
-		// TODO: https://github.com/tendermint/go-amino/issues/267
-		//return MarshalBinaryBare(RegisteredAny{
-		//	AminoPreOrDisfix: info.Prefix.Bytes(),
-		//	Value: bz,
-		//})
-		pb := info.Prefix.Bytes()
-		bz = append(pb, bz...)
 	}
 
-	return bz, nil
+	return buf.Bytes(), nil
 }
 
 //type RegisteredAny struct {

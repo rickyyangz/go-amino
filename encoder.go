@@ -9,6 +9,9 @@ import (
 	"time"
 )
 
+
+
+
 //----------------------------------------
 // Signed
 
@@ -136,7 +139,7 @@ func (e InvalidTimeErr) Error() string {
 // UInt64.
 // Milliseconds are used to ease compatibility with Javascript,
 // which does not support finer resolution.
-func EncodeTime(w io.Writer, t time.Time) (err error) {
+func EncodeTime(buf Buffer, t time.Time) (err error) {
 	s := t.Unix()
 	// TODO: We are hand-encoding a struct until MarshalAmino/UnmarshalAmino is supported.
 	// skip if default/zero value:
@@ -145,14 +148,8 @@ func EncodeTime(w io.Writer, t time.Time) (err error) {
 			return InvalidTimeErr(fmt.Sprintf("seconds have to be >= %d and < %d, got: %d",
 				minSeconds, maxSeconds, s))
 		}
-		err = encodeFieldNumberAndTyp3(w, 1, Typ3Varint)
-		if err != nil {
-			return
-		}
-		err = EncodeUvarint(w, uint64(s))
-		if err != nil {
-			return
-		}
+		encodeFieldNumberAndTyp3(buf, 1, Typ3Varint)
+		buf.EncodeVarint(uint64(s))
 	}
 	ns := int32(t.Nanosecond()) // this int64 -> int32 cast is safe (nanos are in [0, 999999999])
 	// skip if default/zero value:
@@ -164,14 +161,8 @@ func EncodeTime(w io.Writer, t time.Time) (err error) {
 			return InvalidTimeErr(fmt.Sprintf("nanoseconds have to be >= 0 and <= %v, got: %d",
 				maxNanos, s))
 		}
-		err = encodeFieldNumberAndTyp3(w, 2, Typ3Varint)
-		if err != nil {
-			return
-		}
-		err = EncodeUvarint(w, uint64(ns))
-		if err != nil {
-			return
-		}
+		encodeFieldNumberAndTyp3(buf, 2, Typ3Varint)
+		buf.EncodeVarint(uint64(ns))
 	}
 
 	return

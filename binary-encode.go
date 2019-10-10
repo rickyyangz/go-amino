@@ -409,7 +409,7 @@ func (cdc *Codec) encodeReflectBinaryStruct(w io.Writer, info *TypeInfo, rv refl
 			var frv = rv.Field(field.Index)
 			var frvIsPtr = frv.Kind() == reflect.Ptr
 			var dfrv, isDefault = isDefaultValue(frv)
-			if isDefault && !fopts.WriteEmpty {
+			if isDefault && !field.WriteEmpty {
 				// Do not encode default value fields
 				// (except when `amino:"write_empty"` is set).
 				continue
@@ -436,7 +436,7 @@ func (cdc *Codec) encodeReflectBinaryStruct(w io.Writer, info *TypeInfo, rv refl
 				}
 				lAfterValue := buf.Len()
 
-				if !frvIsPtr && !fopts.WriteEmpty && lBeforeValue == lAfterValue-1 && buf.Bytes()[buf.Len()-1] == 0x00 {
+				if !frvIsPtr && !field.WriteEmpty && lBeforeValue == lAfterValue-1 && buf.Bytes()[buf.Len()-1] == 0x00 {
 					// rollback typ3/fieldnum and last byte if
 					// not a pointer and empty:
 					buf.Truncate(lBeforeKey)
